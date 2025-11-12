@@ -23,6 +23,8 @@ with st.sidebar:
     speed = st.slider('Replay speed (laps/sec)', 0.1, 5.0, 1.0)
     target_stint = st.number_input('Target stint (laps)', min_value=1, max_value=100, value=20)
     pit_cost = st.number_input('Pit time cost (s)', min_value=1.0, max_value=120.0, value=20.0)
+    degradation_rate = st.number_input('Tyre degradation (s/lap)', min_value=0.0, max_value=1.0, value=0.15, step=0.05)
+    total_race_laps = st.number_input('Total race laps (optional)', min_value=0, max_value=200, value=50)
 
 if not choice:
     st.warning('Please select or upload a lap_time CSV to begin.')
@@ -91,8 +93,15 @@ if step_button or run_button:
                     pass
                 # limit history
                 last_laps = last_laps[-5:]
-                # compute recommendation
-                rec = recommend_pit(lap, last_pit_lap, last_laps, target_stint=target_stint, pit_time_cost=pit_cost)
+                # compute recommendation with remaining laps
+                remaining = total_race_laps - lap if total_race_laps > lap else None
+                rec = recommend_pit(
+                    lap, last_pit_lap, last_laps, 
+                    target_stint=target_stint, 
+                    pit_time_cost=pit_cost,
+                    remaining_laps=remaining,
+                    degradation_per_lap=degradation_rate
+                )
                 placeholder.metric('Lap', lap, delta=None)
                 info_box.json(rec)
                 # Attempt a safe rerun. Newer/older Streamlit builds sometimes
@@ -119,7 +128,14 @@ if step_button or run_button:
             except Exception:
                 pass
             last_laps = last_laps[-5:]
-            rec = recommend_pit(lap, last_pit_lap, last_laps, target_stint=target_stint, pit_time_cost=pit_cost)
+            remaining = total_race_laps - lap if total_race_laps > lap else None
+            rec = recommend_pit(
+                lap, last_pit_lap, last_laps, 
+                target_stint=target_stint, 
+                pit_time_cost=pit_cost,
+                remaining_laps=remaining,
+                degradation_per_lap=degradation_rate
+            )
             placeholder.metric('Lap', lap, delta=None)
             info_box.json(rec)
     except StopIteration:
@@ -134,7 +150,14 @@ if st.button('Simulate Caution Now'):
         # recompute using last available lap
         row = vdf.iloc[min(pos - 1, len(vdf)-1)]
         lap = int(row['lap']) if 'lap' in row.index and str(row['lap']).isdigit() else pos
-        rec = recommend_pit(lap, last_pit_lap, last_laps, target_stint=target_stint, pit_time_cost=pit_cost)
+        remaining = total_race_laps - lap if total_race_laps > lap else None
+        rec = recommend_pit(
+            lap, last_pit_lap, last_laps, 
+            target_stint=target_stint, 
+            pit_time_cost=pit_cost,
+            remaining_laps=remaining,
+            degradation_per_lap=degradation_rate
+        )
         caution = recommend_under_caution(rec, pit_time_cost=pit_cost)
         st.json({'recommendation': rec, 'caution_decision': caution})
     else:
