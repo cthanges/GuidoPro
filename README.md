@@ -54,14 +54,28 @@ pytest -v
 ## Files
 
 - `src/data_loader.py` — Helpers to find/load lap_time CSVs
+- `src/telemetry_loader.py` — **Robust telemetry data loader** with data quality handling (see [TELEMETRY_GUIDE.md](TELEMETRY_GUIDE.md))
 - `src/simulator.py` — Lap-level replay engine
 - `src/analytics/pit_strategy.py` — **Multi-lap pit window optimizer** with degradation model
 - `src/analytics/caution_handler.py` — Caution decision logic
-- `tests/test_pit_strategy.py` — Unit tests for optimizer
+- `tests/test_pit_strategy.py` — Unit tests for pit optimizer
+- `tests/test_telemetry_loader.py` — Unit tests for telemetry loader (14 tests)
+
+## Telemetry Support
+
+The project includes comprehensive telemetry data handling with robust data quality fixes:
+- **Vehicle ID parsing**: Handles `GR86-{chassis}-{car_number}` format
+- **Lap #32768 detection**: Automatically detects and corrects ECU lap counter errors
+- **Timestamp handling**: Distinguishes `meta_time` (reliable) from `timestamp` (ECU)
+- **14 telemetry parameters**: Speed, throttle, braking, acceleration, steering, GPS, etc.
+- **Data validation**: Quality reports with warnings and diagnostics
+
+See [TELEMETRY_GUIDE.md](TELEMETRY_GUIDE.md) for detailed documentation and examples.
 
 ## Next Steps
 
-- Add telemetry-level (sector/corner) replay for higher fidelity
+- Integrate telemetry-based degradation (actual G-forces vs fixed rate)
+- Add sector-level replay using distance-from-start telemetry
 - Incorporate fuel model and compound-specific degradation curves
 - Traffic and field-position modeling for undercut/overcut scenarios
 - Probabilistic caution modeling (expected value with risk)
