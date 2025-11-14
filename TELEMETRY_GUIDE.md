@@ -1,7 +1,7 @@
 # Telemetry Data Guide
 
 ## Overview
-The project includes comprehensive support for high-frequency telemetry data from race vehicles, with robust handling of known data quality issues.
+GuidoAI includes comprehensive support for high-frequency telemetry data from race vehicles, with robust handling of known data quality issues.
 
 ## Data Files
 
