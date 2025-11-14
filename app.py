@@ -1,11 +1,13 @@
 import streamlit as st
 import time
 import pandas as pd
+from pathlib import Path
 from src import data_loader
 from src.simulator import SimpleSimulator, TelemetrySimulator
 from src.analytics.pit_strategy import recommend_pit, estimate_degradation_from_telemetry
 from src.analytics.caution_handler import recommend_under_caution
 from src.analytics.anomaly_detection import detect_all_anomalies, get_anomaly_summary
+from src.analytics.traffic_model import TrafficModel
 from src import telemetry_loader
 
 
@@ -37,6 +39,21 @@ with st.sidebar:
     pit_cost = st.number_input('Pit time cost (s)', min_value=1.0, max_value=120.0, value=20.0)
     degradation_rate = st.number_input('Tyre degradation (s/lap)', min_value=0.0, max_value=1.0, value=0.15, step=0.05)
     total_race_laps = st.number_input('Total race laps (optional)', min_value=0, max_value=200, value=50)
+    
+    st.markdown('---')
+    st.header('Traffic Model')
+    enable_traffic = st.checkbox('Enable traffic analysis', value=True, 
+                                   help='Use field position data to detect undercut/overcut opportunities')
+    if enable_traffic:
+        endurance_files = list(Path('Datasets').rglob('*AnalysisEndurance*.CSV'))
+        if endurance_files:
+            endurance_choice = st.selectbox('Endurance data file', 
+                                            options=[str(f) for f in endurance_files],
+                                            help='Select the endurance analysis CSV with lap-by-lap position data')
+        else:
+            st.info('No endurance analysis files found. Upload one to enable traffic analysis.')
+            endurance_choice = st.file_uploader('Upload endurance CSV', type=['csv'])
+            enable_traffic = False  # Disable if no file
 
 if not choice:
     st.warning(f'Please select or upload a {file_type.lower()} CSV to begin.')
@@ -108,6 +125,28 @@ with col2:
     st.subheader('Pit Strategy')
     info_box = st.empty()
 
+# Add field position display (always create placeholders)
+position_box = None
+gap_leader_box = None
+gap_ahead_box = None
+traffic_impact_box = None
+
+if enable_traffic:
+    st.markdown('---')
+    col_a, col_b, col_c = st.columns(3)
+    with col_a:
+        st.subheader('Field Position')
+        position_box = st.empty()
+    with col_b:
+        st.subheader('Gap to Leader')
+        gap_leader_box = st.empty()
+    with col_c:
+        st.subheader('Gap to Car Ahead')
+        gap_ahead_box = st.empty()
+    
+    st.markdown('### Track Position Impact')
+    traffic_impact_box = st.empty()
+
 # Add anomaly detection box for telemetry mode
 if use_telemetry:
     st.markdown('---')
@@ -121,6 +160,47 @@ current_lap = 0
 
 if 'sim_pos' not in st.session_state:
     st.session_state['sim_pos'] = 0
+
+# Initialize traffic model if enabled
+traffic_model = None
+car_number = None
+
+if enable_traffic and endurance_choice:
+    try:
+        # Load endurance data
+        if isinstance(endurance_choice, str):
+            endurance_df = pd.read_csv(endurance_choice, sep=';', encoding='utf-8')
+        else:
+            endurance_df = pd.read_csv(endurance_choice, sep=';', encoding='utf-8')
+        
+        # Initialize traffic model
+        traffic_model = TrafficModel(endurance_df)
+        st.sidebar.success(f'✓ Traffic model loaded ({len(endurance_df)} rows)')
+        
+        # Extract car number from vehicle ID
+        if vehicle:
+            # Parse vehicle ID to get car number (e.g., "GR86-004-78" -> 78)
+            from src.telemetry_loader import parse_vehicle_id
+            parsed = parse_vehicle_id(vehicle)
+            if parsed and parsed.car_number:
+                car_number = parsed.car_number
+                st.sidebar.success(f'✓ Traffic model initialized for car #{car_number}')
+            else:
+                # Try extracting from vehicle string directly
+                parts = str(vehicle).split('-')
+                if len(parts) >= 2 and parts[-1].isdigit():
+                    car_number = int(parts[-1])
+                    st.sidebar.success(f'✓ Traffic model initialized for car #{car_number}')
+                else:
+                    st.sidebar.warning(f'⚠️ Could not extract car number from vehicle ID: {vehicle}')
+        else:
+            st.sidebar.warning('⚠️ No vehicle selected - traffic model needs a car number')
+    except Exception as e:
+        st.sidebar.error(f'Failed to load traffic model: {str(e)}')
+        import traceback
+        st.sidebar.code(traceback.format_exc())
+        traffic_model = None
+        car_number = None
 
 # Compute telemetry-based degradation if available
 if use_telemetry and vehicle and telemetry_df is not None:
@@ -160,6 +240,58 @@ def render_row(row):
     return lap, timestamp, val
 
 
+def _update_traffic_display(rec, traffic_model, car_number, lap, 
+                            position_box, gap_leader_box, gap_ahead_box, 
+                            traffic_impact_box):
+    """Update traffic-related display elements."""
+    # Skip if boxes not created
+    if not all([position_box, gap_leader_box, gap_ahead_box, traffic_impact_box]):
+        return
+    
+    # Debug: show what's in rec
+    if 'field_position' not in rec:
+        traffic_impact_box.warning(f"⚠️ No traffic data in recommendation. Keys: {list(rec.keys())}")
+        return
+    
+    if 'field_position' in rec:
+        position_box.metric('Position', f"P{rec['field_position']}")
+    
+    if 'gap_to_leader' in rec:
+        gap_leader_box.metric('Gap to Leader', f"{rec['gap_to_leader']}s")
+    
+    if 'gap_to_ahead' in rec:
+        gap_ahead_box.metric('Gap Ahead', f"{rec['gap_to_ahead']}s")
+    
+    # Show position impact
+    impact_text = []
+    
+    if 'position_after_pit' in rec:
+        pos_change = rec.get('field_position', 0) - rec['position_after_pit']
+        if pos_change > 0:
+            impact_text.append(f"⬇️ Will drop to P{rec['position_after_pit']} (lose {pos_change} position{'s' if pos_change > 1 else ''})")
+        elif pos_change < 0:
+            impact_text.append(f"⬆️ Will gain to P{rec['position_after_pit']} (gain {-pos_change} position{'s' if -pos_change > 1 else ''})")
+        else:
+            impact_text.append(f"➡️ Will maintain P{rec['position_after_pit']}")
+    
+    # Show undercut opportunities
+    if 'undercut_opportunities' in rec and rec['undercut_opportunities']:
+        impact_text.append("\n**🎯 Undercut Opportunities:**")
+        for opp in rec['undercut_opportunities']:
+            confidence_emoji = {'high': '🔥', 'medium': '⚡', 'low': '💡'}
+            emoji = confidence_emoji.get(opp['confidence'], '•')
+            impact_text.append(
+                f"{emoji} {opp['description']} "
+                f"(advantage: {opp['advantage']:.1f}s)"
+            )
+    
+    if impact_text:
+        traffic_impact_box.markdown('\n\n'.join(impact_text))
+    else:
+        traffic_impact_box.info('No significant traffic impact detected')
+
+
+
 if step_button or run_button:
     try:
         if run_button:
@@ -176,15 +308,29 @@ if step_button or run_button:
                 last_laps = last_laps[-5:]
                 # compute recommendation with remaining laps
                 remaining = total_race_laps - lap if total_race_laps > lap else None
+                
+                # Debug: log what we're passing
+                if enable_traffic and traffic_model and car_number:
+                    st.sidebar.info(f"🔍 Calling recommend_pit: lap={lap}, car={car_number}, traffic_model={'loaded' if traffic_model else 'None'}")
+                
                 rec = recommend_pit(
                     lap, last_pit_lap, last_laps, 
                     target_stint=target_stint, 
                     pit_time_cost=pit_cost,
                     remaining_laps=remaining,
-                    degradation_per_lap=degradation_rate
+                    degradation_per_lap=degradation_rate,
+                    traffic_model=traffic_model,
+                    car_number=car_number,
+                    consider_traffic=enable_traffic
                 )
                 placeholder.metric('Lap', lap, delta=None)
                 info_box.json(rec)
+                
+                # Update traffic displays
+                if enable_traffic and traffic_model and car_number:
+                    _update_traffic_display(rec, traffic_model, car_number, lap,
+                                           position_box, gap_leader_box, gap_ahead_box, 
+                                           traffic_impact_box)
                 # Attempt a safe rerun. Newer/older Streamlit builds sometimes
                 # don't expose `st.experimental_rerun`. Use it when present,
                 # otherwise raise the internal RerunException as a fallback.
@@ -215,10 +361,19 @@ if step_button or run_button:
                 target_stint=target_stint, 
                 pit_time_cost=pit_cost,
                 remaining_laps=remaining,
-                degradation_per_lap=degradation_rate
+                degradation_per_lap=degradation_rate,
+                traffic_model=traffic_model,
+                car_number=car_number,
+                consider_traffic=enable_traffic
             )
             placeholder.metric('Lap', lap, delta=None)
             info_box.json(rec)
+            
+            # Update traffic displays
+            if enable_traffic and traffic_model and car_number:
+                _update_traffic_display(rec, traffic_model, car_number, lap,
+                                       position_box, gap_leader_box, gap_ahead_box, 
+                                       traffic_impact_box)
     except StopIteration:
         st.info('Replay finished')
 
@@ -241,7 +396,10 @@ if st.button('Simulate Caution Now'):
             target_stint=target_stint, 
             pit_time_cost=pit_cost,
             remaining_laps=remaining,
-            degradation_per_lap=degradation_rate
+            degradation_per_lap=degradation_rate,
+            traffic_model=traffic_model,
+            car_number=car_number,
+            consider_traffic=enable_traffic
         )
         caution = recommend_under_caution(rec, pit_time_cost=pit_cost)
         st.json({'recommendation': rec, 'caution_decision': caution})
