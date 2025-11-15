@@ -585,16 +585,42 @@ if 'step_button' in locals() and 'run_button' in locals() and (step_button or ru
                 
                 # Format recommendation display
                 if rec:
+                    # Determine action from reason
+                    reason = rec.get('reason', 'unknown')
+                    action_map = {
+                        'optimal_window': '⛽ Pit Now',
+                        'undercut_opportunity': '🎯 Pit Now (Undercut)',
+                        'no_net_benefit': '✅ Stay Out',
+                        'too_few_laps_remaining': 'ℹ️ Too Late',
+                        'no_valid_candidates': 'ℹ️ No Strategy',
+                        'wait_for_caution': '⏳ Wait for Caution',
+                        'pit_now_caution_unlikely': '⚠️ Pit Immediately'
+                    }
+                    action = action_map.get(reason, reason.replace('_', ' ').title())
+                    
                     rec_display = f"""
-                    **Action:** {rec.get('action', 'N/A')}
+                    **Action:** {action}
                     
-                    **Reason:** {rec.get('reason', 'N/A')}
+                    **Reason:** {reason.replace('_', ' ').title()}
                     
-                    **Optimal Pit Lap:** {rec.get('optimal_pit_lap', 'N/A')}
+                    **Optimal Pit Lap:** {rec.get('recommended_lap', 'N/A')}
                     
-                    **Expected Savings:** {rec.get('time_saved', 0):.1f}s
+                    **Expected Savings:** {rec.get('score', 0):.1f}s
                     """
-                    info_box.success(rec_display)
+                    
+                    # Color coding based on action urgency:
+                    # - Green (success) = Good! Stay out, tires still good
+                    # - Red (error) = Action needed, pit recommended
+                    # - Yellow (warning) = Informational, no action yet
+                    if rec.get('recommended_lap'):
+                        # Pit is recommended
+                        info_box.error(rec_display)  # Red = action needed
+                    elif reason == 'no_net_benefit':
+                        # Tires still good, stay out
+                        info_box.success(rec_display)  # Green = all good
+                    else:
+                        # Informational
+                        info_box.warning(rec_display)  # Yellow = just info
                 else:
                     info_box.info("Calculating...")
                 
@@ -644,16 +670,42 @@ if 'step_button' in locals() and 'run_button' in locals() and (step_button or ru
             placeholder.write(f"**Lap {lap}** | Time: {val if val else 'N/A'}")
             
             if rec:
+                # Determine action from reason
+                reason = rec.get('reason', 'unknown')
+                action_map = {
+                    'optimal_window': '⛽ Pit Now',
+                    'undercut_opportunity': '🎯 Pit Now (Undercut)',
+                    'no_net_benefit': '✅ Stay Out',
+                    'too_few_laps_remaining': 'ℹ️ Too Late',
+                    'no_valid_candidates': 'ℹ️ No Strategy',
+                    'wait_for_caution': '⏳ Wait for Caution',
+                    'pit_now_caution_unlikely': '⚠️ Pit Immediately'
+                }
+                action = action_map.get(reason, reason.replace('_', ' ').title())
+                
                 rec_display = f"""
-                **Action:** {rec.get('action', 'N/A')}
+                **Action:** {action}
                 
-                **Reason:** {rec.get('reason', 'N/A')}
+                **Reason:** {reason.replace('_', ' ').title()}
                 
-                **Optimal Pit Lap:** {rec.get('optimal_pit_lap', 'N/A')}
+                **Optimal Pit Lap:** {rec.get('recommended_lap', 'N/A')}
                 
-                **Expected Savings:** {rec.get('time_saved', 0):.1f}s
+                **Expected Savings:** {rec.get('score', 0):.1f}s
                 """
-                info_box.success(rec_display)
+                
+                # Color coding based on action urgency:
+                # - Green (success) = Good! Stay out, tires still good
+                # - Red (error) = Action needed, pit recommended
+                # - Yellow (warning) = Informational, no action yet
+                if rec.get('recommended_lap'):
+                    # Pit is recommended
+                    info_box.error(rec_display)  # Red = action needed
+                elif reason == 'no_net_benefit':
+                    # Tires still good, stay out
+                    info_box.success(rec_display)  # Green = all good
+                else:
+                    # Informational
+                    info_box.warning(rec_display)  # Yellow = just info
             
             # Update traffic displays
             if enable_traffic and traffic_model and car_number:
