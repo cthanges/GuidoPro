@@ -7,30 +7,26 @@ from dataclasses import dataclass
 from enum import Enum
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-DATASETS_DIR = os.path.join(ROOT, 'Datasets')
+DATASETS_DIR = os.path.join(ROOT, 'Datasets') # Directory containing the datasets
 
-# Known bad lap number (common ECU error)
-INVALID_LAP_NUMBER = 32768
+INVALID_LAP_NUMBER = 32768 # Known issue about lap count in the datasets
 
-
-class TelemetryParameter(Enum):
-    """Telemetry parameters with units and descriptions."""
-    
+class TelemetryParameter(Enum):    
     # Speed & Drivetrain
     SPEED = ("Speed", "km/h", "Vehicle speed")
     GEAR = ("Gear", "gear", "Current gear selection")
     NMOT = ("nmot", "rpm", "Engine RPM")
     
     # Throttle & Braking
-    ATH = ("ath", "%", "Throttle blade position (0=closed, 100=wide open)")
-    APS = ("aps", "%", "Accelerator pedal position (0=none, 100=full)")
+    ATH = ("ath", "%", "Throttle blade position (0% = Fully closed, 100% = Wide open)")
+    APS = ("aps", "%", "Accelerator pedal position (0% = No acceleration, 100% = Fully pressed)")
     PBRAKE_F = ("pbrake_f", "bar", "Front brake pressure")
     PBRAKE_R = ("pbrake_r", "bar", "Rear brake pressure")
     
     # Acceleration & Steering
-    ACCX_CAN = ("accx_can", "G", "Forward/backward acceleration (+forward, -braking)")
-    ACCY_CAN = ("accy_can", "G", "Lateral acceleration (+left, -right)")
-    STEERING_ANGLE = ("Steering_Angle", "degrees", "Steering wheel angle (0=straight, +CW, -CCW)")
+    ACCX_CAN = ("accx_can", "G", "Forward/backward acceleration (positive = accelerating, negative = braking)")
+    ACCY_CAN = ("accy_can", "G", "Lateral acceleration (positive = left turn, negative = right turn)")
+    STEERING_ANGLE = ("Steering_Angle", "degrees", "Steering wheel angle (0 = straight, negative = counterclockwise, positive = clockwise)")
     
     # Position & Lap Data
     VBOX_LONG = ("VBOX_Long_Minutes", "degrees", "GPS longitude")
