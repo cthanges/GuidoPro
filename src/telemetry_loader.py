@@ -1,13 +1,3 @@
-"""
-Telemetry data loader with robust handling of known data quality issues.
-
-Handles:
-- meta_time vs timestamp distinction (meta_time = message received, timestamp = ECU time)
-- Vehicle ID parsing (GR86-chassis-carnumber format)
-- Lap #32768 detection and correction
-- Telemetry parameter validation and units
-"""
-
 import os
 import glob
 import pandas as pd
@@ -16,7 +6,6 @@ from typing import List, Dict, Optional, Tuple
 from dataclasses import dataclass
 from enum import Enum
 
-# Root directories
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 DATASETS_DIR = os.path.join(ROOT, 'Datasets')
 
