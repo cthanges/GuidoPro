@@ -40,7 +40,7 @@ def vehicle_ids_from_lap_time(df: pd.DataFrame) -> List[str]:
     return [] # Return an empty list if column doesn't exist
 
 def filter_vehicle_laps(df: pd.DataFrame, vehicle_id: str) -> pd.DataFrame:
-    # Filter lap_time file data for specific vehicle ID
+    # Filter lap_time file data for a specific vehicle
     if 'vehicle_id' in df.columns:
         d = df[df['vehicle_id'] == vehicle_id].copy()
     else:
