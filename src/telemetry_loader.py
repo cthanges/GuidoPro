@@ -81,67 +81,47 @@ def parse_vehicle_id(vehicle_id: str) -> Optional[VehicleID]:
     )
 
 def is_valid_lap(lap: int) -> bool:
-    """Check if lap number is valid (not the common ECU error value).
-    
-    Args:
-        lap: Lap number to validate
-        
-    Returns:
-        False if lap is the known error value (32768), True otherwise
-    """
-    return lap != INVALID_LAP_NUMBER
-
+    return lap != INVALID_LAP_NUMBER # Only use valid lap numbers (not using 32768)
 
 def infer_lap_from_timestamp(df: pd.DataFrame, timestamp_col: str = 'timestamp') -> pd.Series:
-    """Infer lap numbers from timestamps when lap counter is unreliable.
-    
-    Uses timestamp ordering to reconstruct lap sequence. Groups by vehicle
-    and uses time gaps to detect new laps.
-    
-    Args:
-        df: DataFrame with timestamp column
-        timestamp_col: Name of timestamp column
-        
-    Returns:
-        Series with inferred lap numbers (int)
-    """
+    # Step 1: Check if the 'timestamp' column exists
     if timestamp_col not in df.columns:
         return pd.Series([1] * len(df), index=df.index, dtype=int)
     
-    # Ensure timestamps are datetime
+    # Step 2: Prepare a working copy and convert the timestamps to datetime format
     df_work = df.copy()
     df_work[timestamp_col] = pd.to_datetime(df_work[timestamp_col], errors='coerce')
     
-    # Sort by vehicle and timestamp
+    # Step 3: Sort by vehicle ID and timestamp
     if 'vehicle_id' in df_work.columns:
         df_work = df_work.sort_values(['vehicle_id', timestamp_col])
     else:
         df_work = df_work.sort_values(timestamp_col)
     
-    # Compute time deltas
+    # Step 4: Compute time deltas
     if 'vehicle_id' in df_work.columns:
         df_work['_time_delta'] = df_work.groupby('vehicle_id')[timestamp_col].diff().dt.total_seconds()
     else:
         df_work['_time_delta'] = df_work[timestamp_col].diff().dt.total_seconds()
     
-    # New lap when time gap > threshold (e.g., 60 seconds suggests new lap start)
+    # Step 5: Detect new laps (based on time gaps)
     LAP_GAP_THRESHOLD = 60.0
     df_work['_new_lap'] = (df_work['_time_delta'] > LAP_GAP_THRESHOLD) | (df_work['_time_delta'].isna())
     
-    # Cumulative sum gives lap number
+    # Step 6: Generate the lap numbers using the cumulative sum
     if 'vehicle_id' in df_work.columns:
         inferred_laps = df_work.groupby('vehicle_id')['_new_lap'].cumsum() + 1
     else:
         inferred_laps = df_work['_new_lap'].cumsum() + 1
     
-    # Restore original index order and return as int series
+    # Step 7: Restore the original index order
     result = pd.Series(index=df.index, dtype=int)
     result.loc[inferred_laps.index] = inferred_laps.values
     result = result.fillna(1).astype(int)
     
     return result
 
-
+# I LEFT OFF HERE!!!
 def clean_lap_numbers(df: pd.DataFrame, lap_col: str = 'lap', timestamp_col: str = 'timestamp') -> pd.DataFrame:
     """Clean lap numbers by detecting and replacing invalid values.
     
