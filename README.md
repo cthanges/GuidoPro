@@ -10,7 +10,7 @@ Real-time analytics tool that uses probabilistic AI to optimize pit strategy, an
 - **Optimal Pit Window Calculator**: Multi-lap optimizer that evaluates candidate pit stops and selects the timing that minimizes total race time
 - **Traffic & Position Modeling**: Real-time field position tracking with undercut/overcut opportunity detection
 - **Probabilistic Caution Analysis**: Expected value calculation across multiple caution timing scenarios with confidence ratings
-- **Tyre Degradation Model**: Linear degradation model (configurable seconds/lap) OR auto-detected from telemetry lateral G forces
+- **Tire Degradation Model**: Linear degradation model (configurable seconds/lap) OR auto-detected from telemetry lateral G forces
 - **Caution Handler**: Adjusts pit recommendations when yellow flags reduce pit-time cost
 - **Interactive Tuning**: Adjust pit cost, degradation rate, target stint, race length, and caution probability via UI controls
 
@@ -27,9 +27,9 @@ Real-time analytics tool that uses probabilistic AI to optimize pit strategy, an
 ## How It Works
 
 The optimizer evaluates multiple candidate pit laps (e.g., lap 11, 12, 13...) and for each strategy computes:
-1. Time remaining on worn tyres before pit
+1. Time remaining on worn tires before pit
 2. Pit time cost
-3. Time on fresh tyres after pit (with degradation reset)
+3. Time on fresh tires after pit (with degradation reset)
 4. Total expected race time
 5. **Field position changes** (with traffic model enabled)
 6. **Undercut/overcut opportunities** based on competitor tire age
@@ -85,7 +85,7 @@ pytest -v
 ### Sidebar Controls
 - **Target stint**: Fallback max stint length (laps)
 - **Pit time cost**: Time lost in pit (seconds)
-- **Tyre degradation**: Lap time increase per lap (seconds/lap) — auto-detected in telemetry mode
+- **Tire degradation**: Lap time increase per lap (seconds/lap) — auto-detected in telemetry mode
 - **Total race laps**: Used to compute remaining laps for optimization window
 
 ### Caution Probability (Optional)
