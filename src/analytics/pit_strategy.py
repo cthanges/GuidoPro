@@ -124,10 +124,10 @@ def recommend_pit(current_lap: int, last_pit_lap: int,
     
     # No pit (baseline)
     no_pit_time = _compute_stint_time(
-        baseline_lap_time=baseline_lap_time,
-        stint_start_age=current_stint,
-        num_laps=remaining_laps,
-        degradation_per_lap=degradation_per_lap
+        baseline_lap_time = baseline_lap_time,
+        stint_start_age = current_stint,
+        num_laps = remaining_laps,
+        degradation_per_lap = degradation_per_lap
     )
     
     # Pit at each candidate lap
@@ -137,18 +137,18 @@ def recommend_pit(current_lap: int, last_pit_lap: int,
         
         # Time before pit (continue on worn tires)
         time_before = _compute_stint_time(
-            baseline_lap_time=baseline_lap_time,
-            stint_start_age=current_stint,
-            num_laps=laps_before_pit,
-            degradation_per_lap=degradation_per_lap
+            baseline_lap_time = baseline_lap_time,
+            stint_start_age = current_stint,
+            num_laps = laps_before_pit,
+            degradation_per_lap = degradation_per_lap
         )
         
         # Time after pit (fresh tires)
         time_after = _compute_stint_time(
-            baseline_lap_time=baseline_lap_time,
-            stint_start_age=0, # Fresh tires
-            num_laps=laps_after_pit,
-            degradation_per_lap=degradation_per_lap
+            baseline_lap_time = baseline_lap_time,
+            stint_start_age = 0, # Fresh tires
+            num_laps = laps_after_pit,
+            degradation_per_lap = degradation_per_lap
         )
         
         total_time = time_before + pit_time_cost + time_after
@@ -220,14 +220,14 @@ def recommend_pit(current_lap: int, last_pit_lap: int,
     if consider_caution and total_laps and result.get('recommended_lap'):
         try:
             caution_analysis = analyze_caution_scenarios(
-                current_lap=current_lap,
-                pit_recommendation=result,
-                pit_time_cost=pit_time_cost,
-                total_laps=total_laps,
-                laps_since_pit=current_stint,
-                baseline_lap_time=baseline_lap_time,
-                degradation_per_lap=degradation_per_lap,
-                cautions_per_race=cautions_per_race
+                current_lap = current_lap,
+                pit_recommendation = result,
+                pit_time_cost = pit_time_cost,
+                total_laps = total_laps,
+                laps_since_pit = current_stint,
+                baseline_lap_time = baseline_lap_time,
+                degradation_per_lap = degradation_per_lap,
+                cautions_per_race = cautions_per_race
             )
             result['caution_analysis'] = caution_analysis
             
