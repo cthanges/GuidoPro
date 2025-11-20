@@ -10,7 +10,6 @@ from src.analytics.anomaly_detection import detect_all_anomalies, get_anomaly_su
 from src.analytics.traffic_model import TrafficModel
 from src import telemetry_loader
 
-
 st.set_page_config(page_title="GuidoPro", layout='wide', page_icon="Logo.png")
 
 # Custom CSS for cornflower blue theme
@@ -68,8 +67,7 @@ col1, col2 = st.columns([1, 5])
 with col1:
     st.image("Logo.png", width=100)
 with col2:
-    st.title('GuidoPro — Professional Race Strategist')
-    st.caption('Pit Stop! 🏁')
+    st.title('GuidoPro')
 
 # Main workflow tabs
 tab1, tab2, tab3 = st.tabs(["📁 Setup", "🏁 Race Analysis", "🔧 Advanced Settings"])
@@ -82,10 +80,7 @@ with tab1:
     
     with col_a:
         st.subheader("🗂️ Data Source")
-        file_type = st.radio('What type of data do you have?', 
-                            ['Lap Times', 'Telemetry'], 
-                            index=0,
-                            help="**Lap Times**: Race lap-by-lap data (simpler)\n**Telemetry**: High-frequency sensor data (advanced)")
+        file_type = st.radio('What type of data do you have?', ['Lap Times', 'Telemetry'], index=0, help="**Lap Times**: Race lap-by-lap data (simpler)\n**Telemetry**: High-frequency sensor data (advanced)")
         
         if file_type == 'Lap Times':
             files = data_loader.list_lap_time_files()
