@@ -88,9 +88,7 @@ with tab1:
                 vehicle_ids = [v.raw for v in vehicle_objs] if vehicle_objs else []
             
             if vehicle_ids:
-                vehicle = st.selectbox('Which car do you want to analyze?', 
-                                      vehicle_ids,
-                                      help="Select the vehicle/car number to analyze")
+                vehicle = st.selectbox('Which car do you want to analyze?', vehicle_ids, help="Select the vehicle/car number to analyze")
                 st.success(f"✅ Ready to analyze **{vehicle}**")
             else:
                 st.warning('⚠️ No vehicle IDs found in this file')
@@ -101,17 +99,13 @@ with tab1:
     
     if choice and vehicle:
         st.markdown("---")
-        st.header("Step 2: Configure Race Parameters")
+        st.header("Step 2: Race Parameter Configuration")
         
         col_p1, col_p2, col_p3 = st.columns(3)
         
         with col_p1:
-            st.subheader("🏁 Race Setup")
-            total_race_laps = st.number_input('Total race laps', 
-                                             min_value=10, 
-                                             max_value=200, 
-                                             value=50,
-                                             help="How many laps in this race?")
+            st.subheader("Race Setup")
+            total_race_laps = st.number_input('Total race laps', min_value=10, max_value=200, value=50, help="How many laps in this race?")
             target_stint = st.number_input('Max stint length (laps)', 
                                           min_value=1, 
                                           max_value=100, 
@@ -119,7 +113,7 @@ with tab1:
                                           help="Maximum laps on a single set of tires")
         
         with col_p2:
-            st.subheader("⚙️ Car Setup")
+            st.subheader("Car Setup")
             pit_cost = st.number_input('Pit stop time (seconds)', 
                                       min_value=5.0, 
                                       max_value=120.0, 
@@ -133,13 +127,13 @@ with tab1:
                                               help="How much slower per lap on worn tires")
         
         with col_p3:
-            st.subheader("⚡ Replay Speed")
+            st.subheader("Replay Speed")
             speed = st.slider('Laps per second', 
                             0.1, 5.0, 1.0,
                             help="How fast to replay the race simulation")
             st.info(f"💡 **{speed} laps/sec** = {60/speed:.1f} seconds per lap")
         
-        st.success("✅ Configuration complete! Go to the **🏁 Race Analysis** tab to start →")
+        st.success("✅ Configuration complete! Head to **Race Analysis** to start →")
     else:
         st.info("👆 Complete Step 1 first")
 
@@ -150,7 +144,7 @@ with tab2:
         st.stop()
     
     # Advanced Features Section
-    with st.expander("🔧 Advanced Features", expanded=False):
+    with st.expander("Advanced Features", expanded=False):
         col_adv1, col_adv2 = st.columns(2)
         
         with col_adv1:
@@ -172,7 +166,7 @@ with tab2:
                 show_caution_details = st.checkbox('Show details', value=False)
     
     # Current Configuration summary
-    with st.expander("📋 Current Configuration", expanded=False):
+    with st.expander("Current Configuration", expanded=False):
         col1, col2, col3, col4 = st.columns(4)
         col1.metric("Race Laps", total_race_laps)
         col2.metric("Pit Cost", f"{pit_cost}s")
@@ -290,17 +284,17 @@ with tab2:
     col_left, col_right = st.columns([3, 2])
     
     with col_left:
-        st.subheader("📊 Current Lap Data")
+        st.subheader("Current Lap Data")
         placeholder = st.empty()
     
     with col_right:
-        st.subheader("🎯 Pit Strategy Recommendation")
+        st.subheader("Pit Strategy Recommendation")
         info_box = st.empty()
     
     # Traffic analysis (if enabled)
     if enable_traffic and traffic_model and car_number:
         st.markdown("---")
-        st.subheader("🏎️ Track Position Analysis")
+        st.subheader("Track Position Analysis")
         
         col_t1, col_t2, col_t3 = st.columns(3)
         with col_t1:
@@ -320,7 +314,7 @@ with tab2:
     # Anomaly detection (telemetry mode)
     if use_telemetry:
         st.markdown("---")
-        st.subheader("🔍 Anomaly Detection")
+        st.subheader("Anomaly Detection")
         col_ano1, col_ano2 = st.columns([3, 1])
         with col_ano1:
             anomaly_box = st.empty()
@@ -331,10 +325,10 @@ with tab2:
 with tab3:
     st.header("Advanced Settings & Features")
     
-    st.subheader("🚩 Caution Flag Simulator")
+    st.subheader("Caution Flag Simulator")
     st.markdown("Test how your strategy changes under caution conditions")
     
-    if st.button('🟡 Simulate Caution Now', type="secondary"):
+    if st.button('Simulate Caution', type="secondary"):
         pos = st.session_state.get('sim_pos', 0)
         if pos > 0 and 'vdf' in locals() and pos <= len(vdf):
             row = vdf.iloc[min(pos - 1, len(vdf)-1)]
